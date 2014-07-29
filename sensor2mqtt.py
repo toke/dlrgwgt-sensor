@@ -5,7 +5,8 @@ import sys
 import time
 from datetime import datetime
 from sensor import TemperatureSensor
-import mosquitto
+#import mosquitto
+import paho.mqtt.client as mqtt
 import schedule
 
 
@@ -15,16 +16,21 @@ sensor_topic_base = '/sensors/wgt'
 sensor_topic = '%s/%%s/temp'% sensor_topic_base
 
 known_sensors = {
-    '28-0000042a115a': {'name': 'Wache Weingarten Wasser', 'unit': '°C'},
-    '28-00000450fff0': {'name': 'Wache Weingarten Luft', 'unit': '°C'}
+    '28-0000042a115a': {'name': 'Wache Weingarten Wasser', 'unit': 'C'},
+    '28-00000450fff0': {'name': 'Wache Weingarten Luft', 'unit': 'C'}
 }
 
-def on_connect(rc):
-    if rc == 0:
-        print 'Connect OK'
+def on_connect(client, userdata, flags, rc):
+    client.publish('%s/status' % sensor_topic_base, "online", retain=True)
+    print("Connected with result code "+str(rc))
 
 def on_disconnect(mosq, obj, rc):
     print("Disconnected successfully.")
+
+
+# The callback for when a PUBLISH message is received from the server.
+def on_message(client, userdata, msg):
+    print(msg.topic+" "+str(msg.payload))
 
 def poll_sensors():
     for sensor in get_w1_sensors():
@@ -44,24 +50,25 @@ def get_w1_sensors(path='/sys/devices/w1_bus_master1/w1_master_slaves'):
 
 
 class Publish:
-    def __init__(self, host='127.0.0.1'):
-        self.client = mosquitto.Mosquitto('wgtsensornode01')
-        #self.client.on_connect = on_connect
-        #self.client.on_disconnect = on_disconnect
-        self.client.connect(host, keepalive=60)
+    def __init__(self, host='127.0.0.1', port=1883):
+        self.client = mqtt.Client(protocol=mqtt.MQTTv31) #'wgtsensornode01')
+        self.client.on_connect = on_connect
+        self.client.on_disconnect = on_disconnect
+        self.client.on_message = on_message
+        self.client.connect(host, port, 60)
         self.client.will_set('%s/status' % sensor_topic_base, payload="offline", retain=True)
         
 
     def publish(self, topic, message, retain=False):
+        print ("%s, %s, %s" %(topic, message, retain))
         self.client.publish(topic, payload=message, retain=retain)
+
 
     def loop(self):
         self.client.loop()
         
 
-class SensorWorker:
-    def __init__(self):
-        self.mqtt = Publish()
+
 
 
 if __name__ == '__main__':
@@ -85,6 +92,9 @@ if __name__ == '__main__':
     def uptime_job():
         p.publish('%s/date' % sensor_topic_base, "%s" % datetime.now(), retain=True)
 
+    p.loop()
+
+    #p.client.loop_start()
     p.publish('%s/status' % sensor_topic_base, "online", retain=True)
 
 
@@ -97,7 +107,8 @@ if __name__ == '__main__':
     schedule.every(20).hours.do(uptime_job)
 
 
-    while True:
+    run = True
+    while run:
         schedule.run_pending()
         p.loop()
         time.sleep(1)

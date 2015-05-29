@@ -6,13 +6,14 @@ import time
 from datetime import datetime
 from sensor import TemperatureSensor
 #import mosquitto
+from Adafruit_BMP085 import BMP085
 import paho.mqtt.client as mqtt
 import schedule
 
 
 
 host  = '127.0.0.1'
-sensor_topic_base = '/sensors/wgt'
+sensor_topic_base = 'sensors/dlrgwgt'
 sensor_topic = '%s/%%s/temp'% sensor_topic_base
 
 known_sensors = {
@@ -88,6 +89,13 @@ if __name__ == '__main__':
                 p.publish('%s/%s/unit' % (sensor_topic_base, sensor[0]), known_sensors[sensor[0]]['unit'], retain = True)
 
 
+    def barometer_job():
+        bmp = BMP085(0x77)
+        temp = bmp.readTemperature()
+        pressure = bmp.readPressure()
+        if pressure:
+            p.publish('%s/%s/pressure' % (sensor_topic_base, "bmp085"), "%.2f" % pressure, retain = True)
+            p.publish('%s/%s/temperature' % (sensor_topic_base, "bmp085"), temp, retain = True)
 
     def uptime_job():
         p.publish('%s/date' % sensor_topic_base, "%s" % datetime.now(), retain=True)
@@ -101,10 +109,12 @@ if __name__ == '__main__':
     uptime_job()
     sensor_conf_job()
     sensor_pub_job()
+    barometer_job()
 
     schedule.every(5).minutes.do(sensor_pub_job)
+    schedule.every(5).minutes.do(barometer_job)
     #schedule.every(10).seconds.do(sensor_job)
-    schedule.every(20).hours.do(uptime_job)
+    schedule.every(20).minutes.do(uptime_job)
 
 
     run = True

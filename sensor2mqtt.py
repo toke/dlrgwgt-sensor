@@ -14,7 +14,7 @@ import schedule
 
 host  = '127.0.0.1'
 sensor_topic_base = 'sensors/dlrgwgt'
-sensor_topic = '%s/%%s/temp'% sensor_topic_base
+sensor_topic = '%s/%%s/temp' % sensor_topic_base
 
 known_sensors = {
     '28-0000042a115a': {'name': 'Wache Weingarten Wasser', 'unit': 'C'},
@@ -27,6 +27,7 @@ def on_connect(client, userdata, flags, rc):
 
 def on_disconnect(mosq, obj, rc):
     print("Disconnected successfully.")
+    exit 
 
 
 # The callback for when a PUBLISH message is received from the server.
@@ -95,7 +96,7 @@ if __name__ == '__main__':
         pressure = bmp.readPressure()
         if pressure:
             p.publish('%s/%s/pressure' % (sensor_topic_base, "bmp085"), "%.2f" % pressure, retain = True)
-            p.publish('%s/%s/temperature' % (sensor_topic_base, "bmp085"), temp, retain = True)
+            p.publish('%s/%s/temp' % (sensor_topic_base, "bmp085"), temp, retain = True)
 
     def uptime_job():
         p.publish('%s/date' % sensor_topic_base, "%s" % datetime.now(), retain=True)

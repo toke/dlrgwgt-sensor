@@ -22,7 +22,7 @@ known_sensors = {
 }
 
 def on_connect(client, userdata, flags, rc):
-    client.publish('%s/status' % sensor_topic_base, "online", retain=True)
+    client.publish('%s/status' % sensor_topic_base, "1", retain=True)
     print("Connected with result code "+str(rc))
 
 def on_disconnect(mosq, obj, rc):
@@ -58,7 +58,7 @@ class Publish:
         self.client.on_disconnect = on_disconnect
         self.client.on_message = on_message
         self.client.connect(host, port, 60)
-        self.client.will_set('%s/status' % sensor_topic_base, payload="offline", retain=True)
+        self.client.will_set('%s/state' % sensor_topic_base, payload="0", retain=True)
         
 
     def publish(self, topic, message, retain=False):

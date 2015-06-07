@@ -10,7 +10,7 @@ except RuntimeError:
     print("Error importing RPi.GPIO!  This is probably because you need superuser privileges.  You can achieve this by using 'sudo' to run your script")
 
 MQTT_TOPIC_BASE = "sensors/dlrgwgt"
-MQTT_LWT = "sensors/dlrgwgt/status"
+MQTT_LWT = "sensors/dlrgwgt/gpio/state"
 
 class GpioState(object):
     def __init__(self, channel):
@@ -37,6 +37,7 @@ class GpioState(object):
 class GpioEvent(object):
     def __init__(self, handler=None):
         self.chan_list=[17, 18]
+        self.handler = handler
         self.registry = {}
 
     def setup(self):
@@ -61,7 +62,7 @@ def on_disconnect(mosq, obj, rc):
     exit
 
 def on_connect(client, userdata, flags, rc):
-    client.publish(MQTT_LWT, "online", retain=True)
+    client.publish(MQTT_LWT, "1", retain=True)
     print("Connected with result code "+str(rc))
 
 # The callback for when a PUBLISH message is received from the server.
@@ -75,7 +76,6 @@ def get_sensor_handler(client):
         client.publish("%s/gpio/%i/counter" % (MQTT_TOPIC_BASE, event.channel), "%i" % event.counter, retain=True)
         client.publish("%s/gpio/%i/lastchange" % (MQTT_TOPIC_BASE, event.channel), "%s" % event.lastchange, retain=True)
         client.publish("%s/gpio/%i/startup" % (MQTT_TOPIC_BASE, event.channel), "%s" % event.startup, retain=True)
-
     return handler
     
 

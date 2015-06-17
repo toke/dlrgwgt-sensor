@@ -72,6 +72,8 @@ def on_message(client, userdata, msg):
 def get_sensor_handler(client):
     def handler(event):
         print (event)
+        jsonstr="{\"event\": \"gpio\", \"channel\": %i, \"state\": %i, \"counter\": %i, \"lastchange\": \"%s\", \"startup\": \"%s\"}" % (event.channel, event.state, event.counter, event.lastchange, event.startup)
+        client.publish("%s/gpio/%i/json" % (MQTT_TOPIC_BASE, event.channel), jsonstr, retain=True)
         client.publish("%s/gpio/%i/state" % (MQTT_TOPIC_BASE, event.channel), "%s" % event.state, retain=True)
         client.publish("%s/gpio/%i/counter" % (MQTT_TOPIC_BASE, event.channel), "%i" % event.counter, retain=True)
         client.publish("%s/gpio/%i/lastchange" % (MQTT_TOPIC_BASE, event.channel), "%s" % event.lastchange, retain=True)

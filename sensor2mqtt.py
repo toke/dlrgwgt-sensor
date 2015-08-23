@@ -15,6 +15,7 @@ import schedule
 host  = '127.0.0.1'
 sensor_topic_base = 'sensors/dlrgwgt'
 sensor_topic = '%s/%%s/temp' % sensor_topic_base
+qos=2
 
 known_sensors = {
     '28-0000042a115a': {'name': 'Wache Weingarten Wasser', 'unit': 'C'},
@@ -22,7 +23,7 @@ known_sensors = {
 }
 
 def on_connect(client, userdata, flags, rc):
-    client.publish('%s/status' % sensor_topic_base, "1", retain=True)
+    client.publish('%s/status' % sensor_topic_base, "1", qos=qos, retain=True)
     print("Connected with result code "+str(rc))
 
 def on_disconnect(mosq, obj, rc):
@@ -63,7 +64,7 @@ class Publish:
 
     def publish(self, topic, message, retain=False):
         print ("%s, %s, %s" %(topic, message, retain))
-        self.client.publish(topic, payload=message, retain=retain)
+        self.client.publish(topic, payload=message, qos=qos, retain=retain)
 
 
     def loop(self):
@@ -95,6 +96,7 @@ if __name__ == '__main__':
         temp = bmp.readTemperature()
         pressure = bmp.readPressure()
         if pressure:
+            p.publish('%s/%s/json' % (sensor_topic_base, "bmp085"), '{"pressure": {"value": %.2f, "unit": "Pa"}, "temperature": {"value": %.2f, "unit": "C"}}' % (pressure, temp))
             p.publish('%s/%s/pressure' % (sensor_topic_base, "bmp085"), "%.2f" % pressure, retain = True)
             p.publish('%s/%s/temp' % (sensor_topic_base, "bmp085"), temp, retain = True)
 

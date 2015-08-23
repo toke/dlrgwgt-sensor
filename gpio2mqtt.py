@@ -11,6 +11,7 @@ except RuntimeError:
 
 MQTT_TOPIC_BASE = "sensors/dlrgwgt"
 MQTT_LWT = "sensors/dlrgwgt/gpio/state"
+MQTT_QOS=2
 
 class GpioState(object):
     def __init__(self, channel):
@@ -62,7 +63,7 @@ def on_disconnect(mosq, obj, rc):
     exit
 
 def on_connect(client, userdata, flags, rc):
-    client.publish(MQTT_LWT, "1", retain=True)
+    client.publish(MQTT_LWT, "1", qos=MQTT_QOS, retain=True)
     print("Connected with result code "+str(rc))
 
 # The callback for when a PUBLISH message is received from the server.
@@ -73,11 +74,11 @@ def get_sensor_handler(client):
     def handler(event):
         print (event)
         jsonstr="{\"event\": \"gpio\", \"channel\": %i, \"state\": %i, \"counter\": %i, \"lastchange\": \"%s\", \"startup\": \"%s\"}" % (event.channel, event.state, event.counter, event.lastchange, event.startup)
-        client.publish("%s/gpio/%i/json" % (MQTT_TOPIC_BASE, event.channel), jsonstr, retain=True)
-        client.publish("%s/gpio/%i/state" % (MQTT_TOPIC_BASE, event.channel), "%s" % event.state, retain=True)
-        client.publish("%s/gpio/%i/counter" % (MQTT_TOPIC_BASE, event.channel), "%i" % event.counter, retain=True)
-        client.publish("%s/gpio/%i/lastchange" % (MQTT_TOPIC_BASE, event.channel), "%s" % event.lastchange, retain=True)
-        client.publish("%s/gpio/%i/startup" % (MQTT_TOPIC_BASE, event.channel), "%s" % event.startup, retain=True)
+        client.publish("%s/gpio/%i/json" % (MQTT_TOPIC_BASE, event.channel), jsonstr, retain=True, qos=MQTT_QOS)
+        client.publish("%s/gpio/%i/state" % (MQTT_TOPIC_BASE, event.channel), "%s" % event.state, retain=True, qos=MQTT_QOS)
+        client.publish("%s/gpio/%i/counter" % (MQTT_TOPIC_BASE, event.channel), "%i" % event.counter, retain=True, qos=MQTT_QOS)
+        client.publish("%s/gpio/%i/lastchange" % (MQTT_TOPIC_BASE, event.channel), "%s" % event.lastchange, retain=True, qos=MQTT_QOS)
+        client.publish("%s/gpio/%i/startup" % (MQTT_TOPIC_BASE, event.channel), "%s" % event.startup, retain=True, qos=MQTT_QOS)
     return handler
     
 
